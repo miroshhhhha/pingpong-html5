@@ -1,5 +1,5 @@
 
-import Home from "./components/views/Home";
+import Home from "./components/views/Home.jsx";
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 
