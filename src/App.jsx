@@ -8,14 +8,29 @@ function App() {
   const [gameStarted, setGameStarted] = useState(false);
 
   useEffect(() => {
+    // Handle Space key press
     const handleKeyDown = (e) => {
       if (e.code === 'Space') {
         setGameStarted(true);
       }
     };
 
+    // Handle Left Mouse Button (LMB) click
+    const handleMouseDown = (e) => {
+      if (e.button === 0) {  // 0 is the LMB
+        setGameStarted(true);
+      }
+    };
+
+    // Add event listeners
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('mousedown', handleMouseDown);
+
+    // Cleanup event listeners
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('mousedown', handleMouseDown);
+    };
   }, []);
 
   return (
