@@ -10,106 +10,17 @@ import { ReactComponent as PadelL } from '../assets/padel2.svg';
 
 export default function Game() {
     const [score, setScore] = useState({ left: 0, right: 0 });
-    let [time, setTime] = useState(0);
+    const [time, setTime] = useState(0);
     const [leftPaddleY, setLeftPaddleY] = useState(50);
     const [rightPaddleY, setRightPaddleY] = useState(50);
-    const [ballPosition, setBallPosition] = useState({ x: 50, y: 50 }); // Still keep this for rendering
-    const ballPositionRef = useRef({ x: 50, y: 50 });
-    const ballDirectionRef = useRef({ x: 1, y: 1 });
+    const [ballPosition, setBallPosition] = useState({ x: 50, y: 50 });
+    const ballDirection = useRef({ x: 1, y: 1 });
     const keysPressed = useRef({});
+
     const ballSpeed = 0.5;
-    
-    // Use refs to store paddle positions for better access in the animation loop
-    const leftPaddleYRef = useRef(leftPaddleY);
-    const rightPaddleYRef = useRef(rightPaddleY);
-    
-    useEffect(() => {
-        leftPaddleYRef.current = leftPaddleY;
-        rightPaddleYRef.current = rightPaddleY;
-    }, [leftPaddleY, rightPaddleY]);
+    const paddleSpeed = 1.5;
 
-    useEffect(() => {
-        const intervalId = setInterval(() => {
-            setTime(prev => prev + 1);
-        }, 1000);
-
-        return () => clearInterval(intervalId);
-    }, []);
-
-    // Ball movement logic
-    useEffect(() => {
-        const resetBall = (direction = 1) => {
-            const newDirection = {
-                x: direction, // 1 = right, -1 = left
-                y: parseFloat((Math.random() * 1 - 0.5).toFixed(2)), // Random vertical
-            };
-            ballPositionRef.current = { x: 50, y: 50 };
-            ballDirectionRef.current = newDirection;
-            setBallPosition({ x: 50, y: 50 });
-        };
-
-        const updateScore = (side) => {
-            setScore(prev => ({
-                ...prev,
-                [side]: prev[side] + 1,
-            }));
-        };
-
-        const moveBall = () => {
-            let { x, y } = ballPositionRef.current;
-            let { x: dx, y: dy } = ballDirectionRef.current;
-
-            // Update ball position
-            x += dx * ballSpeed;
-            y += dy * ballSpeed;
-
-            // Bounce off top/bottom walls
-            if (y <= 11 || y >= 96) {
-                dy *= -1;
-            }
-
-            // Ball hits left wall (score for right player)
-            if (x <= 0) {
-                updateScore('right');
-                setTimeout(() => {
-                    resetBall(1); // go right
-                    requestAnimationFrame(moveBall);
-                }, 500);
-                return;
-            }
-
-            // Ball hits right wall (score for left player)
-            if (x >= 100) {
-                updateScore('left');
-                setTimeout(() => {
-                    resetBall(-1); // go left
-                    requestAnimationFrame(moveBall);
-                }, 500);
-                return;
-            }
-
-            // Ball hits the right paddle
-            if (x >= 95 && x <= 100 && y >= rightPaddleYRef.current - 10 && y <= rightPaddleYRef.current + 10) {
-                // Ball hits the right paddle
-                console.log("Ball hit the right paddle!");
-                console.log(dx)
-                dx *= -1; // Reverse ball's horizontal direction upon paddle hit
-            }
-
-            // Save updates
-            ballDirectionRef.current = { x: dx, y: dy };
-            ballPositionRef.current = { x, y };
-            setBallPosition({ x, y });
-
-            // Continue animation
-            requestAnimationFrame(moveBall);
-        };
-
-        const animationId = requestAnimationFrame(moveBall);
-        return () => cancelAnimationFrame(animationId);
-    }, [rightPaddleY, leftPaddleY]); // Dependency on paddle positions
-
-    // Paddle movement logic
+    // Handle paddle movement
     useEffect(() => {
         const handleKeyDown = (e) => {
             keysPressed.current[e.key] = true;
@@ -128,35 +39,23 @@ export default function Game() {
         };
     }, []);
 
+    // Paddle movement logic
     useEffect(() => {
         const movePaddles = () => {
+            // Left paddle controls (A, S)
             if (keysPressed.current['w'] || keysPressed.current['W']) {
-                setLeftPaddleY(prev => {
-                    const newY = prev - 1.5;
-                    if (newY < 23) return prev;
-                    return newY;
-                });
+                setLeftPaddleY(prev => Math.max(prev - paddleSpeed, 23));
             }
             if (keysPressed.current['s'] || keysPressed.current['S']) {
-                setLeftPaddleY(prev => {
-                    const newY = prev + 1.5;
-                    if (newY > 90) return prev;
-                    return newY;
-                });
+                setLeftPaddleY(prev => Math.min(prev + paddleSpeed, 90));
             }
+
+            // Right paddle controls (ArrowUp, ArrowDown)
             if (keysPressed.current['ArrowUp']) {
-                setRightPaddleY(prev => {
-                    const newY = prev - 1.5;
-                    if (newY < 23) return prev;
-                    return newY;
-                });
+                setRightPaddleY(prev => Math.max(prev - paddleSpeed, 23));
             }
             if (keysPressed.current['ArrowDown']) {
-                setRightPaddleY(prev => {
-                    const newY = prev + 1.5;
-                    if (newY > 90) return prev;
-                    return newY;
-                });
+                setRightPaddleY(prev => Math.min(prev + paddleSpeed, 90));
             }
 
             requestAnimationFrame(movePaddles);
@@ -164,6 +63,67 @@ export default function Game() {
 
         movePaddles();
     }, []);
+
+    // Ball movement logic
+    useEffect(() => {
+        const resetBall = (direction = 1) => {
+            ballDirection.current = { x: direction, y: Math.random() * 2 - 1 }; // random vertical direction
+            setBallPosition({ x: 50, y: 50 });
+        };
+
+        const updateScore = (side) => {
+            setScore(prev => ({
+                ...prev,
+                [side]: prev[side] + 1,
+            }));
+        };
+
+        const moveBall = () => {
+            let { x, y } = ballPosition;
+            let { x: dx, y: dy } = ballDirection.current;
+
+            x += dx * ballSpeed;
+            y += dy * ballSpeed;
+
+            // Ball bouncing off top or bottom walls (slightly adjusted for "not exact top")
+            if (y <= 10 || y >= 95) {
+                dy *= -1;
+            }
+
+            // Ball hits left wall (score for right player)
+            if (x <= 0) {
+                updateScore('right');
+                resetBall(1); // Ball goes right
+                return;
+            }
+
+            // Ball hits right wall (score for left player)
+            if (x >= 100) {
+                updateScore('left');
+                resetBall(-1); // Ball goes left
+                return;
+            }
+
+            // Ball hits left paddle
+            if (x <= 5 && y >= leftPaddleY - 10 && y <= leftPaddleY + 10) {
+                dx *= -1; // Ball bounces off the left paddle
+            }
+
+            // Ball hits right paddle
+            if (x >= 95 && y >= rightPaddleY - 10 && y <= rightPaddleY + 10) {
+                dx *= -1; // Ball bounces off the right paddle
+            }
+
+            // Save updates
+            ballDirection.current = { x: dx, y: dy };
+            setBallPosition({ x, y });
+
+            // Continue moving the ball
+            requestAnimationFrame(moveBall);
+        };
+
+        requestAnimationFrame(moveBall);
+    }, [leftPaddleY, rightPaddleY, ballPosition]);
 
     // Time formatting function
     function timeFormat(sec) {
