@@ -19,7 +19,14 @@ export default function Game() {
 
     const ballSpeed = 0.5;
     const paddleSpeed = 1.5;
+    useEffect(() => {
+        const intervalId = setInterval(() => {
+            setTime(prev => prev + 1);
+        }, 1000);
 
+        return () => clearInterval(intervalId);
+    }, []);
+    
     useEffect(() => {
         const handleKeyDown = (e) => {
             keysPressed.current[e.key] = true;
