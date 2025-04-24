@@ -20,7 +20,6 @@ export default function Game() {
     const ballSpeed = 0.5;
     const paddleSpeed = 1.5;
 
-    // Handle paddle movement
     useEffect(() => {
         const handleKeyDown = (e) => {
             keysPressed.current[e.key] = true;
@@ -39,10 +38,8 @@ export default function Game() {
         };
     }, []);
 
-    // Paddle movement logic
     useEffect(() => {
         const movePaddles = () => {
-            // Left paddle controls (A, S)
             if (keysPressed.current['w'] || keysPressed.current['W']) {
                 setLeftPaddleY(prev => Math.max(prev - paddleSpeed, 23));
             }
@@ -50,7 +47,6 @@ export default function Game() {
                 setLeftPaddleY(prev => Math.min(prev + paddleSpeed, 90));
             }
 
-            // Right paddle controls (ArrowUp, ArrowDown)
             if (keysPressed.current['ArrowUp']) {
                 setRightPaddleY(prev => Math.max(prev - paddleSpeed, 23));
             }
@@ -67,7 +63,7 @@ export default function Game() {
     // Ball movement logic
     useEffect(() => {
         const resetBall = (direction = 1) => {
-            ballDirection.current = { x: direction, y: Math.random() * 2 - 1 }; // random vertical direction
+            ballDirection.current = { x: direction, y: Math.random() * 2 - 1 }; 
             setBallPosition({ x: 50, y: 50 });
         };
 
@@ -85,47 +81,41 @@ export default function Game() {
             x += dx * ballSpeed;
             y += dy * ballSpeed;
 
-            // Ball bouncing off top or bottom walls (slightly adjusted for "not exact top")
             if (y <= 10 || y >= 95) {
                 dy *= -1;
             }
 
-            // Ball hits left wall (score for right player)
             if (x <= 0) {
                 updateScore('right');
-                resetBall(1); // Ball goes right
+                resetBall(1); // right
                 return;
             }
 
-            // Ball hits right wall (score for left player)
             if (x >= 100) {
                 updateScore('left');
-                resetBall(-1); // Ball goes left
+                resetBall(-1); //  left
                 return;
             }
 
-            // Ball hits left paddle
+            // left paddle
             if (x <= 5 && y >= leftPaddleY - 10 && y <= leftPaddleY + 10) {
-                dx *= -1; // Ball bounces off the left paddle
+                dx *= -1; 
             }
 
-            // Ball hits right paddle
+            // right paddle
             if (x >= 95 && y >= rightPaddleY - 10 && y <= rightPaddleY + 10) {
-                dx *= -1; // Ball bounces off the right paddle
+                dx *= -1;
             }
 
-            // Save updates
             ballDirection.current = { x: dx, y: dy };
             setBallPosition({ x, y });
 
-            // Continue moving the ball
             requestAnimationFrame(moveBall);
         };
 
         requestAnimationFrame(moveBall);
     }, [leftPaddleY, rightPaddleY, ballPosition]);
 
-    // Time formatting function
     function timeFormat(sec) {
         const minutes = Math.floor(sec / 60);
         const seconds = sec % 60;
@@ -157,10 +147,8 @@ export default function Game() {
             <div className="lineH-background" />
             <div className="lineV-background"><div className="lineV" /></div>
 
-            {/* Ball */}
             <div className="ball" style={{ top: `${ballPosition.y}%`, left: `${ballPosition.x}%` }} />
 
-            {/* Paddles */}
             <PadelL className="paddle paddle-l" style={{ top: `${leftPaddleY}%` }} />
             <PadelR className="paddle paddle-r" style={{ top: `${rightPaddleY}%` }} />
         </div>
