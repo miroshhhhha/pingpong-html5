@@ -7,6 +7,8 @@ import { ReactComponent as ScoreIconR } from '../assets/score1.svg';
 import { ReactComponent as ScoreIconL } from '../assets/score2.svg';
 import { ReactComponent as PadelR } from '../assets/padel1.svg';
 import { ReactComponent as PadelL } from '../assets/padel2.svg';
+import bounceSound from '../assets/bounce.mp3';
+const audioBounce = new Audio('/bounce.mp3');
 
 export default function Game() {
     const [score, setScore] = useState({ left: 0, right: 0 });
@@ -63,7 +65,7 @@ export default function Game() {
     // Ball movement logic
     useEffect(() => {
         const resetBall = (direction = 1) => {
-            ballDirection.current = { x: direction, y: Math.random() * 2 - 1 }; 
+            ballDirection.current = { x: direction, y: Math.random() * 2 - 1 };
             setBallPosition({ x: 50, y: 50 });
         };
 
@@ -99,13 +101,17 @@ export default function Game() {
 
             // left paddle
             if (x <= 5 && y >= leftPaddleY - 10 && y <= leftPaddleY + 10) {
-                dx *= -1; 
+                dx *= -1;
+                audioBounce.play();
             }
 
             // right paddle
             if (x >= 95 && y >= rightPaddleY - 10 && y <= rightPaddleY + 10) {
                 dx *= -1;
+                audioBounce.play();
             }
+
+
 
             ballDirection.current = { x: dx, y: dy };
             setBallPosition({ x, y });
