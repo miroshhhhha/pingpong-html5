@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import '../styles/style.css';
 import '../styles/game.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { Container, Row, Col } from 'react-bootstrap';
+import { Row, Col } from 'react-bootstrap';
 import { ReactComponent as ScoreIconR } from '../assets/score1.svg';
 import { ReactComponent as ScoreIconL } from '../assets/score2.svg';
 import { ReactComponent as PadelR } from '../assets/padel1.svg';
@@ -18,10 +18,9 @@ export default function Game() {
     const keysPressed = useRef({});
     const lastFrameTime = useRef(performance.now());
 
-    const ballSpeed = 0.7; // Reduced for smoother control
+    const ballSpeed = 0.7;
     const paddleSpeed = 1.5;
 
-    // Timer for game duration
     useEffect(() => {
         const intervalId = setInterval(() => {
             setTime(prev => prev + 1);
@@ -30,7 +29,6 @@ export default function Game() {
         return () => clearInterval(intervalId);
     }, []);
 
-    // Keyboard event listeners
     useEffect(() => {
         const handleKeyDown = (e) => {
             keysPressed.current[e.key] = true;
@@ -49,7 +47,6 @@ export default function Game() {
         };
     }, []);
 
-    // Main game loop
     useEffect(() => {
         let animationFrameId;
 
@@ -66,7 +63,7 @@ export default function Game() {
         };
 
         const gameLoop = (currentTime) => {
-            const deltaTime = (currentTime - lastFrameTime.current) / 16.67; // Normalize to ~60fps
+            const deltaTime = (currentTime - lastFrameTime.current) / 16.67; 
             lastFrameTime.current = currentTime;
 
             // Move paddles
@@ -92,7 +89,6 @@ export default function Game() {
                 return newY;
             });
 
-            // Move ball
             setBallPosition(prev => {
                 let { x, y } = prev;
                 let { x: dx, y: dy } = ballDirection.current;
@@ -100,12 +96,10 @@ export default function Game() {
                 x += dx * ballSpeed * deltaTime;
                 y += dy * ballSpeed * deltaTime;
 
-                // Wall collision (top and bottom)
                 if (y <= 10 || y >= 95) {
                     dy *= -1;
                 }
 
-                // Score (ball passes paddles)
                 if (x <= 0) {
                     updateScore('right');
                     resetBall(1);
@@ -118,21 +112,16 @@ export default function Game() {
                     return { x: 50, y: 50 };
                 }
 
-                // Paddle collision (left)
                 if (x <= 5 && y >= leftPaddleY - 10 && y <= leftPaddleY + 10) {
                     dx *= -1;
-                    // Add slight angle based on hit position
                     dy += (y - leftPaddleY) / 10;
                 }
 
-                // Paddle collision (right)
                 if (x >= 95 && y >= rightPaddleY - 10 && y <= rightPaddleY + 10) {
                     dx *= -1;
-                    // Add slight angle based on hit position
                     dy += (y - rightPaddleY) / 10;
                 }
 
-                // Normalize ball direction to maintain consistent speed
                 const speed = Math.sqrt(dx * dx + dy * dy);
                 if (speed > 0) {
                     dx /= speed;
