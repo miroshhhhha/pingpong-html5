@@ -16,9 +16,12 @@ export default function Game() {
     const [ballPosition, setBallPosition] = useState({ x: 50, y: 50 });
     const ballDirection = useRef({ x: 1, y: 1 });
     const keysPressed = useRef({});
+    const lastFrameTime = useRef(performance.now());
 
-    const ballSpeed = 0.5;
+    const ballSpeed = 0.7; // Reduced for smoother control
     const paddleSpeed = 1.5;
+
+    // Timer for game duration
     useEffect(() => {
         const intervalId = setInterval(() => {
             setTime(prev => prev + 1);
@@ -26,7 +29,8 @@ export default function Game() {
 
         return () => clearInterval(intervalId);
     }, []);
-    
+
+    // Keyboard event listeners
     useEffect(() => {
         const handleKeyDown = (e) => {
             keysPressed.current[e.key] = true;
@@ -45,32 +49,12 @@ export default function Game() {
         };
     }, []);
 
+    // Main game loop
     useEffect(() => {
-        const movePaddles = () => {
-            if (keysPressed.current['w'] || keysPressed.current['W']) {
-                setLeftPaddleY(prev => Math.max(prev - paddleSpeed, 23));
-            }
-            if (keysPressed.current['s'] || keysPressed.current['S']) {
-                setLeftPaddleY(prev => Math.min(prev + paddleSpeed, 90));
-            }
+        let animationFrameId;
 
-            if (keysPressed.current['ArrowUp']) {
-                setRightPaddleY(prev => Math.max(prev - paddleSpeed, 23));
-            }
-            if (keysPressed.current['ArrowDown']) {
-                setRightPaddleY(prev => Math.min(prev + paddleSpeed, 90));
-            }
-
-            requestAnimationFrame(movePaddles);
-        };
-
-        movePaddles();
-    }, []);
-
-    // Ball movement logic
-    useEffect(() => {
         const resetBall = (direction = 1) => {
-            ballDirection.current = { x: direction, y: Math.random() * 2 - 1 }; 
+            ballDirection.current = { x: direction, y: Math.random() * 2 - 1 };
             setBallPosition({ x: 50, y: 50 });
         };
 
@@ -81,47 +65,91 @@ export default function Game() {
             }));
         };
 
-        const moveBall = () => {
-            let { x, y } = ballPosition;
-            let { x: dx, y: dy } = ballDirection.current;
+        const gameLoop = (currentTime) => {
+            const deltaTime = (currentTime - lastFrameTime.current) / 16.67; // Normalize to ~60fps
+            lastFrameTime.current = currentTime;
 
-            x += dx * ballSpeed;
-            y += dy * ballSpeed;
+            // Move paddles
+            setLeftPaddleY(prev => {
+                let newY = prev;
+                if (keysPressed.current['w'] || keysPressed.current['W']) {
+                    newY = Math.max(prev - paddleSpeed * deltaTime, 23);
+                }
+                if (keysPressed.current['s'] || keysPressed.current['S']) {
+                    newY = Math.min(prev + paddleSpeed * deltaTime, 90);
+                }
+                return newY;
+            });
 
-            if (y <= 10 || y >= 95) {
-                dy *= -1;
-            }
+            setRightPaddleY(prev => {
+                let newY = prev;
+                if (keysPressed.current['ArrowUp']) {
+                    newY = Math.max(prev - paddleSpeed * deltaTime, 23);
+                }
+                if (keysPressed.current['ArrowDown']) {
+                    newY = Math.min(prev + paddleSpeed * deltaTime, 90);
+                }
+                return newY;
+            });
 
-            if (x <= 0) {
-                updateScore('right');
-                resetBall(1); // right
-                return;
-            }
+            // Move ball
+            setBallPosition(prev => {
+                let { x, y } = prev;
+                let { x: dx, y: dy } = ballDirection.current;
 
-            if (x >= 100) {
-                updateScore('left');
-                resetBall(-1); //  left
-                return;
-            }
+                x += dx * ballSpeed * deltaTime;
+                y += dy * ballSpeed * deltaTime;
 
-            // left paddle
-            if (x <= 5 && y >= leftPaddleY - 10 && y <= leftPaddleY + 10) {
-                dx *= -1; 
-            }
+                // Wall collision (top and bottom)
+                if (y <= 10 || y >= 95) {
+                    dy *= -1;
+                }
 
-            // right paddle
-            if (x >= 95 && y >= rightPaddleY - 10 && y <= rightPaddleY + 10) {
-                dx *= -1;
-            }
+                // Score (ball passes paddles)
+                if (x <= 0) {
+                    updateScore('right');
+                    resetBall(1);
+                    return { x: 50, y: 50 };
+                }
 
-            ballDirection.current = { x: dx, y: dy };
-            setBallPosition({ x, y });
+                if (x >= 100) {
+                    updateScore('left');
+                    resetBall(-1);
+                    return { x: 50, y: 50 };
+                }
 
-            requestAnimationFrame(moveBall);
+                // Paddle collision (left)
+                if (x <= 5 && y >= leftPaddleY - 10 && y <= leftPaddleY + 10) {
+                    dx *= -1;
+                    // Add slight angle based on hit position
+                    dy += (y - leftPaddleY) / 10;
+                }
+
+                // Paddle collision (right)
+                if (x >= 95 && y >= rightPaddleY - 10 && y <= rightPaddleY + 10) {
+                    dx *= -1;
+                    // Add slight angle based on hit position
+                    dy += (y - rightPaddleY) / 10;
+                }
+
+                // Normalize ball direction to maintain consistent speed
+                const speed = Math.sqrt(dx * dx + dy * dy);
+                if (speed > 0) {
+                    dx /= speed;
+                    dy /= speed;
+                }
+
+                ballDirection.current = { x: dx, y: dy };
+                return { x, y };
+            });
+
+            animationFrameId = requestAnimationFrame(gameLoop);
         };
 
-        requestAnimationFrame(moveBall);
-    }, [leftPaddleY, rightPaddleY, ballPosition]);
+        animationFrameId = requestAnimationFrame(gameLoop);
+
+        return () => cancelAnimationFrame(animationFrameId);
+    }, [leftPaddleY, rightPaddleY]);
 
     function timeFormat(sec) {
         const minutes = Math.floor(sec / 60);
