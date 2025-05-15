@@ -15,7 +15,7 @@
 }
 
 .home span {
-    background-color: rgba(255, 147, 250, 0.377);
+    background-color: #ff93fa60;
     padding: 10px 15px;
     border-radius: 10px;
 }
@@ -38,4 +38,11 @@
     width: 4px;
     height: 87vh;
     background-image: url("../assets/LineV.svg");
+}
+
+.instructions {
+    max-width: 400px;
+    font-size: 18px;
+    background-color: #f8f9fa;
+    border-left: 5px solid #72376fd0;
 }

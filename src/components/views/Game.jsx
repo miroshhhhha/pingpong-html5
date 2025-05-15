@@ -227,12 +227,17 @@ export default function Game() {
                         });
                     }}
                 >
-                    {isPaused ? 'Resume' : 'Pause'}
+                    <span className={isPaused ? 'blink' : ''}>
+                        {isPaused ? 'Resume' : 'Pause'}
+                    </span>
                 </button>
             </div>
 
             <div className="lineH-background" />
             <div className="lineV-background"><div className="lineV" /></div>
+
+            <div className="line3" style={{ top: '13%', left: '0%' }} />
+            <div className="line3" style={{ top: '13%', left: '99.77%' }} />
 
             <div className="ball" style={{ top: `${ballPosition.y}%`, left: `${ballPosition.x}%` }} />
 
