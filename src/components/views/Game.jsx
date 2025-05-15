@@ -19,8 +19,6 @@ export default function Game() {
     const ballDirection = useRef({ x: 1, y: 1 });
     const keysPressed = useRef({});
     const lastFrameTime = useRef(performance.now());
-    const savedDirection = useRef({ x: 1, y: 1 });
-    const savedPosition = useRef({ x: 1, y: 1 });
 
     const ballSpeed = 0.7;
     const paddleSpeed = 1.5;
@@ -35,6 +33,14 @@ export default function Game() {
         }
         return () => clearInterval(intervalId);
     }, [isPaused]);
+
+    useEffect(() => {
+        const intervalId = setInterval(() => {
+            setTime(prev => prev + 1);
+        }, 1000);
+
+        return () => clearInterval(intervalId);
+    }, []);
 
     useEffect(() => {
         const handleKeyDown = (e) => {
@@ -72,7 +78,6 @@ export default function Game() {
 
         const resetBall = (direction = 1) => {
             ballDirection.current = { x: direction, y: Math.random() * 2 - 1 };
-            savedDirection.current = { ...ballDirection.current };
             setBallPosition({ x: 50, y: 50 });
         };
 
@@ -84,14 +89,10 @@ export default function Game() {
         };
 
         const gameLoop = (currentTime) => {
-            const deltaTime = Math.min((currentTime - lastFrameTime.current) / 16.67, 2);
+            const deltaTime = (currentTime - lastFrameTime.current) / 16.67; 
             lastFrameTime.current = currentTime;
 
-            if (isPaused) {
-                animationFrameId = requestAnimationFrame(gameLoop);
-                return;
-            }
-
+            // Move paddles
             setLeftPaddleY(prev => {
                 let newY = prev;
                 if (keysPressed.current['w'] || keysPressed.current['W']) {
@@ -117,10 +118,6 @@ export default function Game() {
             setBallPosition(prev => {
                 let { x, y } = prev;
                 let { x: dx, y: dy } = ballDirection.current;
-
-                if (unpauseGrace) {
-                    return { x, y };
-                }
 
                 x += dx * ballSpeed * deltaTime;
                 y += dy * ballSpeed * deltaTime;
@@ -151,17 +148,13 @@ export default function Game() {
                     dy += (y - rightPaddleY) / 10;
                 }
 
-                let speed = Math.sqrt(dx * dx + dy * dy);
-                if (speed === 0 || !isFinite(speed)) {
-                    dx = 1;
-                    dy = Math.random() * 2 - 1;
-                    speed = Math.sqrt(dx * dx + dy * dy);
+                const speed = Math.sqrt(dx * dx + dy * dy);
+                if (speed > 0) {
+                    dx /= speed;
+                    dy /= speed;
                 }
-                dx /= speed;
-                dy /= speed;
 
                 ballDirection.current = { x: dx, y: dy };
-                savedDirection.current = { x: dx, y: dy };
                 return { x, y };
             });
 
@@ -171,17 +164,7 @@ export default function Game() {
         animationFrameId = requestAnimationFrame(gameLoop);
 
         return () => cancelAnimationFrame(animationFrameId);
-    }, [leftPaddleY, rightPaddleY, isPaused]);
-
-    useEffect(() => {
-        if (!unpauseGrace && !isPaused) {
-            ballDirection.current = { ...savedDirection.current };
-            setBallPosition(pos => ({
-                x: pos.x + savedDirection.current.x * 0.01,
-                y: pos.y + savedDirection.current.y * 0.01,
-            }));
-        }
-    }, [unpauseGrace, isPaused]);
+    }, [leftPaddleY, rightPaddleY]);
 
     function timeFormat(sec) {
         const minutes = Math.floor(sec / 60);
